@@ -36,7 +36,8 @@ public:
   [[nodiscard]] bool contains(const T &value) const;
   [[nodiscard]] std::size_t length() const;
   void reset();
-  friend std::ostream &operator<<(std::ostream &os, const LinkedList<T> &list);
+  template <typename U>
+  friend std::ostream &operator<<(std::ostream &os, const LinkedList<U> &list);
 };
 
 template <typename T> LinkedList<T>::~LinkedList() { reset(); }
