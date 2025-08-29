@@ -2,7 +2,6 @@
 #define DSA_LINKEDLIST_H
 
 #include <cstddef>
-#include <iostream>
 #include <stdexcept>
 
 namespace dsa {
@@ -16,158 +15,174 @@ private:
   };
 
   Node *head;
+  Node *tail;
   std::size_t node_count;
 
 public:
-  LinkedList() : head{nullptr}, node_count{0} {}
+  LinkedList() : head{nullptr}, tail{nullptr}, node_count{0} {}
+
+  // Rule of Five
   ~LinkedList();
+  LinkedList(const LinkedList &other);
+  LinkedList &operator=(const LinkedList &other);
+  LinkedList(const LinkedList &&other);
+  LinkedList &operator=(const LinkedList &&other);
 
   // Insertion
   void insert_front(const T &value);
   void insert_rear(const T &value);
-  void insert(const T &value, std::size_t index);
+  void insert_at(std::size_t index, const T &value);
 
   // Removal
   void remove_front();
   void remove_rear();
-  void remove(std::size_t index);
+  void remove_at(std::size_t index);
 
-  // Utility
+  // Utilities
   [[nodiscard]] bool contains(const T &value) const;
-  [[nodiscard]] std::size_t length() const;
-  void reset();
+  [[nodiscard]] bool is_empty() const;
+  void erase();
+
+  // << overloading
   template <typename U>
-  friend std::ostream &operator<<(std::ostream &os, const LinkedList<U> &list);
+  friend std::ostream &operator<<(std::ostream &stream,
+                                  const LinkedList<U> &list);
 };
 
-template <typename T> LinkedList<T>::~LinkedList() { reset(); }
+template <typename T> LinkedList<T>::~LinkedList() { erase(); }
 
 template <typename T> void LinkedList<T>::insert_front(const T &value) {
   Node *new_node{new Node(value)};
-  new_node->next = head;
-  head = new_node;
+  if (head == nullptr) {
+    head = new_node;
+    tail = new_node;
+  } else {
+    new_node->next = head;
+    head = new_node;
+  }
   node_count++;
 }
 
 template <typename T> void LinkedList<T>::insert_rear(const T &value) {
-  if (head == nullptr) {
-    insert_front(value);
-    return;
-  }
-  Node *last{head};
-  while (last->next != nullptr)
-    last = last->next;
   Node *new_node{new Node(value)};
-  last->next = new_node;
+  if (head == nullptr) {
+    head = new_node;
+    tail = new_node;
+  } else {
+    tail->next = new_node;
+    tail = new_node;
+  }
   node_count++;
 }
 
 template <typename T>
-void LinkedList<T>::insert(const T &value, const std::size_t index) {
+void LinkedList<T>::insert_at(const std::size_t index, const T &value) {
   if (index > node_count) {
     throw std::out_of_range("Index out of bounds!");
   }
   if (index == 0) {
     insert_front(value);
-    return;
-  }
-  if (index == node_count) {
+  } else if (index == node_count) {
     insert_rear(value);
-    return;
+  } else {
+    Node *previous{head};
+    for (std::size_t i = 0; i < index - 1; i++) {
+      previous = previous->next;
+    }
+    Node *new_node{new Node(value)};
+    new_node->next = previous->next;
+    previous->next = new_node;
+    node_count++;
   }
-  Node *previous{head};
-  for (std::size_t i = 0; i < index - 1; i++) {
-    previous = previous->next;
-  }
-  Node *new_node{new Node(value)};
-  new_node->next = previous->next;
-  previous->next = new_node;
-  node_count++;
 }
 
 template <typename T> void LinkedList<T>::remove_front() {
-  if (head == nullptr)
+  if (head == nullptr) {
     return;
-  Node *front{head};
-  head = front->next;
-  delete front;
+  }
+  Node *first{head};
+  head = head->next;
+  delete first;
   node_count--;
+  if (head == nullptr) {
+    tail = nullptr;
+  }
 }
 
 template <typename T> void LinkedList<T>::remove_rear() {
-  if (head == nullptr)
+  if (head == nullptr) {
     return;
+  }
   if (head->next == nullptr) {
     remove_front();
-    return;
+  } else {
+    Node *previous{head};
+    while (previous->next->next != nullptr) {
+      previous = previous->next;
+    }
+    previous->next = nullptr;
+    delete tail;
+    tail = previous;
+    node_count--;
   }
-  Node *previous{head};
-  while (previous->next->next != nullptr) {
-    previous = previous->next;
-  }
-  Node *last{previous->next};
-  previous->next = nullptr;
-  delete last;
-  node_count--;
 }
 
-template <typename T> void LinkedList<T>::remove(const std::size_t index) {
+template <typename T> void LinkedList<T>::remove_at(const std::size_t index) {
   if (index >= node_count) {
     throw std::out_of_range("Index out of bounds!");
   }
   if (index == 0) {
     remove_front();
-    return;
-  }
-  if (index == node_count - 1) {
+  } else if (index == node_count - 1) {
     remove_rear();
-    return;
+  } else {
+    Node *previous{head};
+    for (std::size_t i = 0; i < index - 1; i++) {
+      previous = previous->next;
+    }
+    Node *target{previous->next};
+    previous->next = target->next;
+    delete target;
+    node_count--;
   }
-  Node *previous{head};
-  for (std::size_t i = 0; i < index - 1; i++) {
-    previous = previous->next;
-  }
-  Node *target{previous->next};
-  previous->next = target->next;
-  delete target;
-  node_count--;
 }
 
-template <typename T> bool LinkedList<T>::contains(const T &value) const {
-  const Node *current{head};
+template <typename T>
+[[nodiscard]] bool LinkedList<T>::contains(const T &value) const {
+  Node *current{head};
   while (current != nullptr) {
-    if (current->value == value)
+    if (current->value == value) {
       return true;
+    }
     current = current->next;
   }
   return false;
 }
 
-template <typename T> std::size_t LinkedList<T>::length() const {
-  return node_count;
+template <typename T> [[nodiscard]] bool LinkedList<T>::is_empty() const {
+  return node_count == 0;
 }
 
-template <typename T> void LinkedList<T>::reset() {
+template <typename T> void LinkedList<T>::erase() {
   while (head != nullptr) {
-    Node *front{head};
-    head = front->next;
-    delete front;
+    Node *first{head};
+    head = head->next;
+    delete first;
   }
+  tail = nullptr;
   node_count = 0;
 }
 
 template <typename T>
-std::ostream &operator<<(std::ostream &os, const LinkedList<T> &list) {
-  os << "HEAD->";
+std::ostream &operator<<(std::ostream &stream, const LinkedList<T> &list) {
+  stream << "HEAD->";
   typename LinkedList<T>::Node *current{list.head};
   while (current != nullptr) {
-    os << current->value << "->";
+    stream << current->value << (current->next != nullptr ? "->" : "");
     current = current->next;
   }
-  os << "NULL";
-  return os;
+  return stream;
 }
-
 } // namespace dsa
 
 #endif // DSA_LINKEDLIST_H

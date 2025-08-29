@@ -5,9 +5,8 @@ int main() {
   dsa::LinkedList<int> list;
 
   list.insert_front(5);
-  list.insert_rear(2);
-  list.insert(7, 1);
-  list.insert_rear(11);
+  list.insert_rear(7);
+  list.insert_at(0, 2);
   std::cout << list;
 
 
